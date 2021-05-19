@@ -27,6 +27,7 @@ async function getBingDailyList() {
 			desc: image.desc
 		};
 
+		console.log(info.fileName, indexes.find((i) => i.fileName == info.fileName));
 		if (!indexes.find((i) => i.fileName == info.fileName)) {
 			indexes.push(info);
 			isDirty = true;
@@ -35,7 +36,10 @@ async function getBingDailyList() {
 		await downloadImage(info);
 	}
 
-	if (isDirty) fs.writeFileSync(INDEX_FILE, JSON.stringify(records, null, '\t'));
+	if (isDirty) {
+		console.log(`update: ${INDEX_FILE}`);
+		fs.writeFileSync(INDEX_FILE, JSON.stringify(records, null, '\t'));
+	}
 }
 
 async function downloadImage(info) {
