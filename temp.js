@@ -11,9 +11,9 @@ let maxCommits = 100;
 
 async function getBingDailyList() {
 	let isDirty = false;
-	let records = [];
+	let indexes = [];
 
-	if (fs.existsSync(INDEX_FILE)) records = JSON.parse(fs.readFileSync(INDEX_FILE));
+	if (fs.existsSync(INDEX_FILE)) indexes = JSON.parse(fs.readFileSync(INDEX_FILE));
 
 	const result = await request(API_URL);
 
@@ -27,12 +27,12 @@ async function getBingDailyList() {
 			desc: image.desc
 		};
 
-		await downloadImage(info);
-
-		if (!records.find((r) => r.fileName == info.fileName)) {
-			records.push(info);
+		if (!indexes.find((i) => i.fileName == info.fileName)) {
+			indexes.push(info);
 			isDirty = true;
 		}
+
+		await downloadImage(info);
 	}
 
 	if (isDirty) fs.writeFileSync(INDEX_FILE, JSON.stringify(records, null, '\t'));
@@ -64,11 +64,11 @@ function createThumbnail(imagePath, thumbPath) {
 
 	if (!fs.existsSync(thumbPath)) {
 		exec(`convert -thumbnail ${TMB_WIDTH} ${imagePath} ${thumbPath}`);
+		console.log(`thumbnail created: ${thumbPath}`);
 	}
 }
 
 async function request(url, options) {
-	console.log('request to ', url);
 	const res = await axios({
 		url,
 		method: (options && options.method) || 'GET',
