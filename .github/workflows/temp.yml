@@ -1,0 +1,31 @@
+name: Temp
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 12.x
+
+      - name: Install ImageMagick
+        run: sudo apt install imagemagick -y
+      
+      - name: Run temp.js
+        run: |
+          npm i
+          node temp.js
+          
+      - name: Commit change
+        run: |
+          git config --global user.name 'Cuteribs'
+          git config --global user.email 'ericfine1981@live.com'
+          git add **/*.jpg
+          git commit -am "Committed by workflow"
+          git push

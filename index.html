@@ -1,0 +1,124 @@
+<html>
+
+<head>
+	<style>
+		body {
+			margin: 0;
+			background: #333;
+		}
+
+		#yearMonths {
+			font-size: 1.5rem;
+			display: block;
+			width: 150px;
+			margin: 30px auto 0;
+		}
+
+		#container {
+			margin: 20px 50px 50px 50px;
+			display: flex;
+			flex-direction: row;
+			flex-wrap: wrap;
+			list-style: none;
+			padding: 0;
+		}
+
+		#container > li {
+			width: 400px;
+			margin: 3px;
+			overflow: hidden;
+		}
+
+		#container > li > div {
+			width: 400px;
+			height: 225px;
+			box-shadow: 3px 3px 3px #000000b3;
+			overflow: hidden;
+		}
+
+		#container > li > div > a > img {
+			width: 100%;
+			transition: transform 400ms ease-out;
+		}
+
+		#container > li > div img:hover {
+			transform: scale(1.15);
+		}
+
+		#container > li > label {
+			color: #ccc;
+		}
+	</style>
+</head>
+
+<body>
+	<div>
+		<select id="yearMonths" onchange="render(this.selectedOptions[0].text);"></select>
+	</div>
+	<ul id="container"></ul>
+	<script src="moment.min.js"></script>
+	<script>
+		const yearMonths = [];
+		const $select = document.getElementById('yearMonths');
+		let date = moment();
+		
+		while(date.isAfter('2019-03-31')) {
+			const option = document.createElement('option');
+			option.text = date.format('YYYY-MM');
+			$select.add(option);
+			date = date.subtract(1, 'months');
+		}
+
+		async function query(yearMonth) {
+			const config = {
+				headers: {
+					'Content-Type': 'application/json',
+					'Accept': 'application/json',
+				}
+			};
+			const res = await fetch('index.json');
+			const json = await res.json();
+			const list = json.map(o => ({
+				ThumbUrl: `/bingdaily/thumbnails/${o.fileName}`,
+				Url: `https://www.bing.com/th?id=${o.fileName}`,
+				Title: o.title,
+				Date: o.date,
+				Desc: o.desc,
+        			Copyright: o.copyright
+			}));
+			return list.reverse();
+		}
+
+		async function render(yearMonth) {
+			const images = await query(yearMonth);
+			const container = document.getElementById('container');
+			container.innerHTML = '';
+			images.forEach(i => {
+				const link = document.createElement('a');
+				link.href = i.Url;
+
+				const img = document.createElement('img');
+				img.src = i.ThumbUrl;
+				img.title = i.Desc;
+				img.alt = i.Title;
+				img.loading = 'lazy';
+
+				const label = document.createElement('label');
+				label.innerText = `${i.Date} - ${i.Title}`;
+
+				const div = document.createElement('div');
+				link.appendChild(img);				
+				div.appendChild(link);
+				
+				const li = document.createElement('li');
+				li.appendChild(div);
+				li.appendChild(label);
+				container.appendChild(li);
+			});
+		}
+
+		render($select.selectedOptions[0].text);
+	</script>
+</body>
+
+</html>
