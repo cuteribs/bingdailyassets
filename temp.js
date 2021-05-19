@@ -38,7 +38,7 @@ async function getBingDailyList() {
 
 	if (isDirty) {
 		console.log(`update: ${INDEX_FILE}`);
-		fs.writeFileSync(INDEX_FILE, JSON.stringify(records, null, '\t'));
+		fs.writeFileSync(INDEX_FILE, JSON.stringify(indexes, null, '\t'));
 	}
 }
 
