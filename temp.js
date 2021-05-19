@@ -7,6 +7,7 @@ const TMB_FOLDER = 'thumbnails';
 const TMB_WIDTH = 400;
 const INDEX_FILE = 'index.json';
 const API_URL = 'https://r5ea.z7.web.core.windows.net/images.json';
+let maxCommits = 100;
 
 async function getBingDailyList() {
 	let isDirty = false;
@@ -17,6 +18,8 @@ async function getBingDailyList() {
 	const result = await request(API_URL);
 
 	for (const image of result.data) {
+		if(maxCommits <= 0) break;
+		
 		info = {
 			date: image.date,
 			fileName: `OHR.${image.fileName}_UHD.jpg`,
@@ -50,6 +53,7 @@ async function downloadImage(info) {
 		const res = await request(url, { responseType: 'stream' });
 		res.data.pipe(fs.createWriteStream(imagePath));
 		res.data.on('end', () => {
+			maxCommits -= 1;
 			console.log(`image downloaded: ${imagePath}`);
 			createThumbnail(imagePath, thumbPath);
 		});
