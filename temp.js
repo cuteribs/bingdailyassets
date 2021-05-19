@@ -19,7 +19,7 @@ async function getBingDailyList() {
 
 	for (const image of result.data) {
 		if(maxCommits <= 0) break;
-		
+
 		info = {
 			date: image.date,
 			fileName: `OHR.${image.fileName}_UHD.jpg`,
@@ -40,7 +40,6 @@ async function getBingDailyList() {
 
 async function downloadImage(info) {
 	const url = `https://www.bing.com/th?id=${info.fileName}`;
-	console.log(`${info.date}; ${url}`);
 
 	if (!fs.existsSync(IMAGE_FOLDER)) fs.mkdirSync(IMAGE_FOLDER);
 
@@ -65,7 +64,6 @@ function createThumbnail(imagePath, thumbPath) {
 
 	if (!fs.existsSync(thumbPath)) {
 		exec(`convert -thumbnail ${TMB_WIDTH} ${imagePath} ${thumbPath}`);
-		console.log(`thumbnail created: ${thumbPath}`);
 	}
 }
 

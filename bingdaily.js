@@ -40,7 +40,6 @@ async function getBingDailyList() {
 
 async function downloadImage(info) {
 	const url = `https://www.bing.com/th?id=${info.fileName}`;
-	console.log('url', url);
 
 	if (!fs.existsSync(IMAGE_FOLDER)) fs.mkdirSync(IMAGE_FOLDER);
 
