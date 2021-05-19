@@ -78,7 +78,7 @@
 			};
 			const res = await fetch('index.json');
 			const json = await res.json();
-			const list = json.map(o => ({
+			const list = json.filter(i => i.date.slice(0, 7) == yearMonth).map(o => ({
 				ThumbUrl: `/bingdaily/thumbnails/${o.fileName}`,
 				Url: `https://www.bing.com/th?id=${o.fileName}`,
 				Title: o.title,
