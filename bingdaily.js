@@ -1,3 +1,13 @@
+const MESSAGE = `
+# A path lain with petals
+
+## 2021-05-19
+
+![Test](https://cuteribs.ga/bingdaily/thumbnails/OHR.RoanRhododendron_EN-US8777664012_UHD.jpg)
+
+Pisgah National Forest, in western North Carolina, is primarily a hardwood forest boasting 500,000 acres of mountainous peaks and cascading waterfalls that attract hikers, anglers, mountain bikers, and more. But from mid-May to mid-June, the crowds flock here to hike trails that lead to incredible views: acres of native Catawba rhododendrons in full blossom.
+`;
+
 const fs = require('fs');
 const axios = require('axios');
 const { exec } = require('child_process');
