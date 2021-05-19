@@ -1,0 +1,163 @@
+<html>
+
+<head>
+	<meta name="viewport" content="width=device-width">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photobox/1.9.2/photobox/photobox.min.css"
+		integrity="sha512-/ZId16ycFq1sHyEdtpNDCPQ8Xcrp+EFHe5RqnFd4rMGiRr+HxnNoJgf+KEapU1/w6vTaOJEQQkC+UnJAdQauPg=="
+		crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<style>
+		body {
+			margin: 0 50px;
+			background: #333;
+		}
+
+		.head {
+			display: flex;
+			flex-direction: row;
+			justify-content: space-between;
+			margin: 30px auto 0;
+		}
+
+		.head h2 {
+			margin: 0;
+			padding: 0;
+			line-height: 1em;
+			color: #ccc;
+		}
+
+		#yearMonths {
+			font-size: 1.5rem;
+			display: block;
+			width: 150px;
+		}
+
+		#container {
+			width: 100%;
+			margin: 20px 0 0 0;
+			list-style: none;
+			padding: 0;
+			display: flex;
+			flex-direction: row;
+			flex-wrap: wrap;
+		}
+
+		#container>li {
+			margin: 5px;
+			position: relative;
+			transition: .1s;
+		}
+
+		#container>li>a {
+			width: 200px;
+			height: 112px;
+			display: block;
+			overflow: hidden;
+			transition: .4s ease-out;
+			transform: rotateX(90deg) translate(-50px, -50%);
+		}
+
+		#container>li>a:active,
+		#container>li>a:focus {
+			outline: none;
+		}
+
+		#container>li>a>img {
+			width: 100%;
+			border: 0;
+			transition: .3s ease-out;
+		}
+
+		#container>li.loaded:hover {
+			z-index: 2;
+			transform: scale(1.5);
+		}
+
+		#container>li.loaded>a {
+			transform: rotateX(0deg) translate(0, 0);
+		}
+
+		#container>li.loaded>a:hover {
+			box-shadow: 0 0 0 2px #FFF, 0 0 20px 5px #000;
+			transition: .1s;
+		}
+
+		#container>li.loaded>a:hover img {
+			transform: scale(1.2);
+		}
+	</style>
+</head>
+
+<body>
+	<div class="head">
+		<h2>Bing Daily Wallpaper</h2>
+		<select id="yearMonths"></select>
+	</div>
+	<ul id="container"></ul>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"
+		integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+		integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/photobox/1.9.2/photobox/jquery.photobox.min.js"
+		integrity="sha512-Iy/lpQGCiLBmkVa4C2x7eZ4Rmos/ODtaxZcF/avvX5iJFIO8uHBWl7gnaVBA3TKQxIBG3XuWK+tpqRTrbFoxzw=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script>
+	</script>
+	<script>
+		const yearMonths = [];
+		const $select = $('#yearMonths').on('change', e => render($(e.target).val()));
+		const $container = $('#container').photobox('a', { thumb: true, loop: false });
+		let date = moment();
+
+		while (date.isAfter('2019-03-31')) {
+			const text = date.format('YYYY-MM');
+			$select.append(new Option(text, text));
+			date = date.subtract(1, 'months');
+		}
+
+		async function query(yearMonth) {
+			const config = {
+				headers: {
+					'Content-Type': 'application/json',
+					'Accept': 'application/json',
+				}
+			};
+			const res = await fetch('index.json');
+			const json = await res.json();
+			json.sort((a, b) => a.date > b.date ? 1 : (a.date < b.date ? -1 : 0));
+			const list = json.filter(i => i.date.slice(0, 7) == yearMonth).map(o => ({
+				ThumbUrl: `bingdaily/thumbnails/${o.fileName}`,
+				FHDUrl: `https://www.bing.com/th?id=${o.fileName.replace('_UHD.jpg', '_1920x1080.jpg')}`,
+				UHDUrl: `https://www.bing.com/th?id=${o.fileName}`,
+				Title: o.title,
+				Date: o.date,
+				Desc: o.desc,
+				Copyright: o.copyright
+			}));
+			return list.reverse();
+		}
+
+		async function render(yearMonth) {
+			const images = await query(yearMonth);
+			$container.html('');
+
+			images.forEach((item, index) => {
+				const $link = $('<a>').attr('href', item.FHDUrl);
+				const $img = $('<img>').on('load', e => { })
+					.attr('largeUrl', item.FHDUrl)
+					.attr('src', item.ThumbUrl)
+					.attr('title', item.title)
+					.appendTo($link);
+				const $li = $('<li>').append($link);
+				$container.append($li);
+
+				setTimeout(() => $li.addClass('loaded'), 25 * index);
+			});
+		}
+
+		render($select.val());
+	</script>
+</body>
+
+</html>
