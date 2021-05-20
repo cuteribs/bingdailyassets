@@ -12,6 +12,7 @@ const API_URL = 'https://www.bing.com/HPImageArchive.aspx?pid=hp&format=js&n=8&s
 const IMAGE_ON = process.env.IMAGE_ON || false;
 const TMB_ON = process.env.TMB_ON || false;
 const SERVER_J = process.env.SERVER_J;
+console.warn('env', IMAGE_ON, TMB_ON, SERVER_J);
 
 async function getBingDailyList() {
 	let records = [];
