@@ -1,16 +1,7 @@
-const MESSAGE = `
-# A path lain with petals
-
-## 2021-05-19
-
-![Test](https://cuteribs.ga/bingdaily/thumbnails/OHR.RoanRhododendron_EN-US8777664012_UHD.jpg)
-
-Pisgah National Forest, in western North Carolina, is primarily a hardwood forest boasting 500,000 acres of mountainous peaks and cascading waterfalls that attract hikers, anglers, mountain bikers, and more. But from mid-May to mid-June, the crowds flock here to hike trails that lead to incredible views: acres of native Catawba rhododendrons in full blossom.
-`;
-
 const fs = require('fs');
 const axios = require('axios');
 const { exec } = require('child_process');
+const { URLSearchParams } = require('url');
 
 const IMAGE_FOLDER = 'wallpapers';
 const TMB_FOLDER = 'thumbnails';
@@ -18,9 +9,14 @@ const TMB_WIDTH = 400;
 const INDEX_FILE = 'index.json';
 const API_URL = 'https://www.bing.com/HPImageArchive.aspx?pid=hp&format=js&n=8&setmkt=en-us&setlang=en-us&ensearch=1';
 
+const IMAGE_ON = process.env.IMAGE_ON || false;
+const TMB_ON = process.env.TMB_ON || false;
+const SERVER_J = process.env.SERVER_J;
+
 async function getBingDailyList() {
 	let isDirty = false;
 	let records = [];
+	const newRecords = [];
 
 	if (fs.existsSync(INDEX_FILE)) {
 		records = JSON.parse(fs.readFileSync(INDEX_FILE));
@@ -41,30 +37,45 @@ async function getBingDailyList() {
 
 		if (!records.find((r) => r.fileName == info.fileName)) {
 			records.push(info);
+			newRecords.push(info);
 			isDirty = true;
 		}
 	}
 
 	if (isDirty) fs.writeFileSync(INDEX_FILE, JSON.stringify(records, null, '\t'));
+
+	if (newRecords.length > 0) await sendNotification(newRecords);
 }
 
 async function downloadImage(info) {
-	const url = `https://www.bing.com/th?id=${info.fileName}`;
+	if (IMAGE_ON) {
+		const url = `https://www.bing.com/th?id=${info.fileName}`;
+		const path = `${IMAGE_FOLDER}/${info.fileName}`;
 
-	if (!fs.existsSync(IMAGE_FOLDER)) fs.mkdirSync(IMAGE_FOLDER);
+		if (!fs.existsSync(IMAGE_FOLDER)) fs.mkdirSync(IMAGE_FOLDER);
 
-	const imagePath = `${IMAGE_FOLDER}/${info.fileName}`;
-	const thumbPath = `${TMB_FOLDER}/${info.fileName}`;
+		if (!fs.existsSync(path)) {
+			const res = await request(url, { responseType: 'stream' });
+			res.data.pipe(fs.createWriteStream(path));
+			res.data.on('end', () => {
+				console.log(`🖼 image downloaded: ${path} 🖼`);
+			});
+		}
+	}
 
-	if (fs.existsSync(imagePath)) {
-		createThumbnail(imagePath, thumbPath);
-	} else {
-		const res = await request(url, { responseType: 'stream' });
-		res.data.pipe(fs.createWriteStream(imagePath));
-		res.data.on('end', () => {
-			console.log(`image downloaded: ${imagePath}`);
-			createThumbnail(imagePath, thumbPath);
-		});
+	if (TMB_ON) {
+		const url = `https://www.bing.com/th?id=${info.fileName}&w=400&h=225`;
+		const path = `${TMB_FOLDER}/${info.fileName}`;
+
+		if (!fs.existsSync(TMB_FOLDER)) fs.mkdirSync(TMB_FOLDER);
+
+		if (!fs.existsSync(path)) {
+			const res = await request(url, { responseType: 'stream' });
+			res.data.pipe(fs.createWriteStream(path));
+			res.data.on('end', () => {
+				console.log(`🎞 thumbnail downloaded: ${path} 🎞`);
+			});
+		}
 	}
 }
 
@@ -84,6 +95,33 @@ async function request(url, options) {
 		responseType: (options && options.responseType) || 'JSON'
 	});
 	return res;
+}
+
+async function sendNotification(list) {
+	if (!list || list.length == 0) return;
+
+	if (!SERVER_J) return;
+
+	const title = 'Bing 每日壁纸收集完成';
+	const content = list.map((item) => {
+		return `
+# ${item.title}
+
+## ${item.date}
+
+[![${item.title}](https://www.bing.com/th?id=${item.fileName}&w=400&h=225)](https://www.bing.com/th?id=${infofileName})
+
+${item.desc}
+------
+`;
+	});
+
+	const url = `https://sctapi.ftqq.com/${SERVER_J}.send`;
+	const body = new URLSearchParams();
+	body.set('title', title);
+	body.set('desp', content);
+	await request(url, { method: 'POST', body });
+	console.log('💌 notification sent 💌');
 }
 
 getBingDailyList();
