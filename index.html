@@ -7,6 +7,7 @@
 		body {
 			margin: 0 50px;
 			background: #333;
+			color: #ccc;
 		}
 
 		.head {
@@ -86,6 +87,10 @@
 		#container>li.loaded>a:hover img {
 			transform: scale(1.2);
 		}
+
+		.pbWrapper img.zoomable {
+			transition: all 0.5s ease-out;
+		}
 	</style>
 </head>
 
@@ -110,7 +115,15 @@
 	<script>
 		const yearMonths = [];
 		const $select = $('#yearMonths').on('change', e => render($(e.target).val()));
-		const $container = $('#container').photobox('a', { thumb: true, loop: false });
+		const $container = $('#container').photobox('a', {
+			thumb: true,
+			loop: false,
+			captionTmpl: '<div class="title">{title}</div><a class="uhd-link" href="#">UHD</a><div class="counter">({currentImageIdx}/{totalImagesCount})</div>'
+		});
+		$(document.body).on('click', '.uhd-link', e => {
+			const fhdUrl = $('img.zoomable').attr('src');
+			window.open(fhdUrl.replace('_1920x1080.jpg', '_UHD.jpg'), '_blank');
+		});
 		let date = moment();
 
 		while (date.isAfter('2019-03-31')) {
@@ -150,7 +163,7 @@
 				const $img = $('<img>').on('load', e => { })
 					.attr('largeUrl', item.FHDUrl)
 					.attr('src', item.ThumbUrl)
-					.attr('title', item.title)
+					.attr('title', `${item.Title} (${item.Date})`)
 					.appendTo($link);
 				const $li = $('<li>').append($link);
 				$container.append($li);
