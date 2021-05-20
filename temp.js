@@ -24,6 +24,8 @@ async function getBingDailyList() {
 
 	for (const info of result.data) {
 		if (commits <= 0) break;
+
+		info.fileName = `OHR.${info.fileName}_UHD.jpg`;
 		await downloadImage(info);
 
 		if (!records.find((r) => r.fileName == info.fileName)) {
@@ -80,33 +82,6 @@ async function request(url, options) {
 		responseType: (options && options.responseType) || 'JSON'
 	});
 	return res;
-}
-
-async function sendNotification(list) {
-	if (!list || list.length == 0) return;
-
-	if (!SERVER_J) return;
-
-	const title = 'Bing 每日壁纸收集完成';
-	const content = list.map((item) => {
-		return `
-# ${item.title}
-
-## ${item.date}
-
-[![${item.title}](https://www.bing.com/th?id=${item.fileName}&w=400&h=225)](https://www.bing.com/th?id=${infofileName})
-
-${item.desc}
-------
-`;
-	});
-
-	const url = `https://sctapi.ftqq.com/${SERVER_J}.send`;
-	const body = new URLSearchParams();
-	body.set('title', title);
-	body.set('desp', content);
-	await request(url, { method: 'POST', body });
-	console.log('💌 notification sent 💌');
 }
 
 getBingDailyList();
