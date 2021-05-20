@@ -1,6 +1,9 @@
-name: Temp
+name: BingDaily
 
-on: 
+on:
+  schedule:
+    - cron:  '5 1 * * *'
+    - cron:  '5 13 * * *'    
   workflow_dispatch:
 
 jobs:
@@ -13,9 +16,6 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: 12.x
-
-      - name: Install ImageMagick
-        run: sudo apt install imagemagick -y
       
       - name: Run temp.js
         run: |
