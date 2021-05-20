@@ -14,7 +14,6 @@ const TMB_ON = process.env.TMB_ON || false;
 const SERVER_J = process.env.SERVER_J;
 
 async function getBingDailyList() {
-	let isDirty = false;
 	let records = [];
 	const newRecords = [];
 
@@ -25,7 +24,7 @@ async function getBingDailyList() {
 	const result = await request(API_URL);
 
 	for (const image of result.data.images) {
-		info = {
+		const info = {
 			date: `${image.startdate.slice(0, 4)}-${image.startdate.slice(4, 6)}-${image.startdate.slice(6, 8)}`,
 			fileName: `${image.urlbase.slice(7)}_UHD.jpg`,
 			title: image.title,
@@ -42,9 +41,10 @@ async function getBingDailyList() {
 		}
 	}
 
-	if (isDirty) fs.writeFileSync(INDEX_FILE, JSON.stringify(records, null, '\t'));
-
-	if (newRecords.length > 0) await sendNotification(newRecords);
+	if (newRecords.length > 0) {
+		fs.writeFileSync(INDEX_FILE, JSON.stringify(records, null, '\t'));
+		await sendNotification(newRecords);
+	}
 }
 
 async function downloadImage(info) {
@@ -92,27 +92,30 @@ async function request(url, options) {
 	const res = await axios({
 		url,
 		method: (options && options.method) || 'GET',
+		data: (options && options.data) || null,
 		responseType: (options && options.responseType) || 'JSON'
 	});
 	return res;
 }
 
 async function sendNotification(list) {
+	console.log('💌 notification send 💌');
 	if (!list || list.length == 0) return;
 
 	if (!SERVER_J) return;
 
-	const title = 'Bing 每日壁纸收集完成';
-	const content = list.map((item) => {
+	const title = `Bing 每日壁纸收集完成 (${list.length})`;
+	const content = list.map((item, index) => {
 		return `
-# ${item.title}
+# (${index + 1}) ${item.title}
 
 ## ${item.date}
 
-[![${item.title}](https://www.bing.com/th?id=${item.fileName}&w=400&h=225)](https://www.bing.com/th?id=${infofileName})
+[![${item.title}](https://www.bing.com/th?id=${item.fileName}&w=400&h=225)](https://www.bing.com/th?id=${item.fileName})
 
 ${item.desc}
-------
+
+---
 `;
 	});
 
@@ -120,8 +123,10 @@ ${item.desc}
 	const body = new URLSearchParams();
 	body.set('title', title);
 	body.set('desp', content);
-	await request(url, { method: 'POST', body });
-	console.log('💌 notification sent 💌');
+	request(url, { method: 'POST', data: body })
+		.then(() => console.log('💌 notification sent 💌'))
+		.catch((err) => console.log(err));
+	// console.log('💌 notification sent 💌');
 }
 
 getBingDailyList();
