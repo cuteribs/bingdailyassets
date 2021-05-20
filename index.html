@@ -127,7 +127,7 @@
 			const json = await res.json();
 			json.sort((a, b) => a.date > b.date ? 1 : (a.date < b.date ? -1 : 0));
 			const list = json.filter(i => i.date.slice(0, 7) == yearMonth).map(o => ({
-				ThumbUrl: `bingdaily/thumbnails/${o.fileName}`,
+				ThumbUrl: `thumbnails/${o.fileName}`,
 				FHDUrl: `https://www.bing.com/th?id=${o.fileName.replace('_UHD.jpg', '_1920x1080.jpg')}`,
 				UHDUrl: `https://www.bing.com/th?id=${o.fileName}`,
 				Title: o.title,
