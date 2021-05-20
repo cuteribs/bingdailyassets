@@ -2,8 +2,8 @@ name: BingDaily
 
 on:
   schedule:
-    - cron:  '5 1 * * *'
-    - cron:  '5 13 * * *'    
+    - cron: '5 1 * * *'
+    - cron: '5 13 * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,16 +12,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      
+
       - uses: actions/setup-node@v2
         with:
           node-version: 12.x
-      
+
       - name: Run bingdaily.js
+        env:
+          IMAGE_ON: 1
+          TMB_ON: 1
+          SERVER_J: ${{ secrets.SERVER_J }}
         run: |
           npm i
           node bingdaily.js
-          
+
       - name: Commit change
         run: |
           git config --global user.name 'Cuteribs'
