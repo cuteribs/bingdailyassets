@@ -44,6 +44,7 @@ async function getBingDailyList() {
 
 	if (newRecords.length > 0) {
 		fs.writeFileSync(INDEX_FILE, JSON.stringify(records, null, '\t'));
+		exec('touch .dirty');
 		await sendNotification(newRecords);
 	}
 }
