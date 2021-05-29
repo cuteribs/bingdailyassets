@@ -2,7 +2,7 @@ name: BingDaily
 
 on:
   schedule:
-    - cron: '5 9 * * *'
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 jobs:
@@ -10,26 +10,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-
       - uses: actions/setup-node@v2
         with:
           node-version: 12.x
 
       - name: Run bingdaily.js
         env:
+          TOKEN: ${{ secrets.TOKEN }}
+          REPO_NAME: cuteribs/bingdaily
           IMAGE_ON: 1
           TMB_ON: 1
           SERVER_J: ${{ secrets.SERVER_J }}
+          BARK: ${{ secrets.BARK }}
         run: |
           npm i
           node bingdaily.js
-
-      - name: Commit change
-        run: |
-          git config --global user.name 'Cuteribs'
-          git config --global user.email 'ericfine1981@live.com'
-          git add **/*.jpg
-          git add index.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "Committed by workflow"
-          git push
