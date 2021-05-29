@@ -1,30 +1,33 @@
-const fs = require('fs');
 const axios = require('axios');
-const { exec } = require('child_process');
+const { PassThrough } = require('stream');
 const { URLSearchParams } = require('url');
 
 const IMAGE_FOLDER = 'wallpapers';
 const TMB_FOLDER = 'thumbnails';
-const TMB_WIDTH = 400;
 const INDEX_FILE = 'index.json';
 const API_URL = 'https://www.bing.com/HPImageArchive.aspx?pid=hp&format=js&n=8&setmkt=en-us&setlang=en-us&ensearch=1';
 
+const TOKEN = process.env.TOKEN;
+const REPO_NAME = process.env.REPO_NAME;
 const IMAGE_ON = process.env.IMAGE_ON || false;
 const TMB_ON = process.env.TMB_ON || false;
 const SERVER_J = process.env.SERVER_J;
-console.warn('env', IMAGE_ON, TMB_ON, SERVER_J);
+const BARK = process.env.BARK;
 
 async function getBingDailyList() {
 	let records = [];
-	const newRecords = [];
+	let sha = null;
+	let result = await getContent(INDEX_FILE);
 
-	if (fs.existsSync(INDEX_FILE)) {
-		records = JSON.parse(fs.readFileSync(INDEX_FILE));
+	if (result.data.sha && result.data.content) {
+		records = JSON.parse(Buffer.from(result.data.content, 'base64').toString());
+		sha = result.data.sha;
 	}
 
-	const result = await request(API_URL);
+	const newRecords = [];
+	const res = await request(API_URL);
 
-	for (const image of result.data.images) {
+	for (const image of res.data.images) {
 		const info = {
 			date: `${image.startdate.slice(0, 4)}-${image.startdate.slice(4, 6)}-${image.startdate.slice(6, 8)}`,
 			fileName: `${image.urlbase.slice(7)}_UHD.jpg`,
@@ -38,66 +41,109 @@ async function getBingDailyList() {
 		if (!records.find((r) => r.fileName == info.fileName)) {
 			records.push(info);
 			newRecords.push(info);
-			isDirty = true;
 		}
 	}
 
 	if (newRecords.length > 0) {
-		fs.writeFileSync(INDEX_FILE, JSON.stringify(records, null, '\t'));
-		exec('touch .dirty');
-		await sendNotification(newRecords);
+		const str = JSON.stringify(records, null, '\t');
+		const content = Buffer.from(str).toString('base64');
+		result = await uploadContent(INDEX_FILE, content, sha);
+
+		if (result.status == 200) {
+			await sendNotification(newRecords);
+		} else {
+			console.warn(result.message);
+		}
 	}
 }
 
 async function downloadImage(info) {
 	if (IMAGE_ON) {
-		const url = `https://www.bing.com/th?id=${info.fileName}`;
 		const path = `${IMAGE_FOLDER}/${info.fileName}`;
+		let result = await getContent(path);
 
-		if (!fs.existsSync(IMAGE_FOLDER)) fs.mkdirSync(IMAGE_FOLDER);
-
-		if (!fs.existsSync(path)) {
+		if (result.status == 404) {
+			const url = `https://www.bing.com/th?id=${info.fileName}`;
 			const res = await request(url, { responseType: 'stream' });
-			res.data.pipe(fs.createWriteStream(path));
-			res.data.on('end', () => {
+			const chunks = res.data.pipe(new PassThrough({ encoding: 'base64' }));
+
+			let content = '';
+			for await (const chunk of chunks) content += chunk;
+			result = await uploadContent(path, content);
+
+			if (result.status === 201) {
 				console.log(`🖼 image downloaded: ${path} 🖼`);
-			});
+			} else {
+				console.warn(result.message);
+			}
 		}
 	}
 
 	if (TMB_ON) {
-		const url = `https://www.bing.com/th?id=${info.fileName}&w=400&h=225`;
 		const path = `${TMB_FOLDER}/${info.fileName}`;
+		let result = await getContent(path);
 
-		if (!fs.existsSync(TMB_FOLDER)) fs.mkdirSync(TMB_FOLDER);
-
-		if (!fs.existsSync(path)) {
+		if (result.status == 404) {
+			const url = `https://www.bing.com/th?id=${info.fileName}&w=400&h=225`;
 			const res = await request(url, { responseType: 'stream' });
-			res.data.pipe(fs.createWriteStream(path));
-			res.data.on('end', () => {
+			const chunks = res.data.pipe(new PassThrough({ encoding: 'base64' }));
+
+			let content = '';
+			for await (const chunk of chunks) content += chunk;
+			result = await uploadContent(path, content);
+
+			if (result.status === 201) {
 				console.log(`🎞 thumbnail downloaded: ${path} 🎞`);
-			});
+			} else {
+				console.warn(result.message);
+			}
 		}
-	}
-}
-
-function createThumbnail(imagePath, thumbPath) {
-	if (!fs.existsSync(TMB_FOLDER)) fs.mkdirSync(TMB_FOLDER);
-
-	if (!fs.existsSync(thumbPath)) {
-		exec(`convert -thumbnail ${TMB_WIDTH} ${imagePath} ${thumbPath}`);
-		console.log(`thumbnail created: ${thumbPath}`);
 	}
 }
 
 async function request(url, options) {
 	const res = await axios({
 		url,
-		method: (options && options.method) || 'GET',
+		method: (options && options.method) || 'get',
+		headers: options && options.headers,
 		data: (options && options.data) || null,
-		responseType: (options && options.responseType) || 'JSON'
+		responseType: (options && options.responseType) || 'json',
+		validateStatus: false
 	});
 	return res;
+}
+
+async function getContent(path) {
+	const url = `https://api.github.com/repos/${REPO_NAME}/contents/${path}`;
+	const options = {
+		method: 'get',
+		headers: {
+			Accept: 'application/vnd.github.v3+json',
+			Authorization: `token ${TOKEN}`
+		}
+	};
+	const res = await request(url, options);
+	return { status: res.status, message: `${url}: ${res.data.message}`, data: res.data };
+}
+
+async function uploadContent(path, content, sha) {
+	const url = `https://api.github.com/repos/${REPO_NAME}/contents/${path}`;
+	const data = {
+		message: `upload ${path}`,
+		content: content,
+		sha: sha
+	};
+	const options = {
+		method: 'put',
+		headers: {
+			Accept: 'application/vnd.github.v3+json',
+			Authorization: `token ${TOKEN}`
+		},
+		data
+	};
+	const res = await request(url, options);
+	res.data.message && console.error(res.data.message, url);
+	return { status: res.status, message: `${url}: ${res.data.message}`, data: res.data };
 }
 
 async function sendNotification(list) {
@@ -107,8 +153,9 @@ async function sendNotification(list) {
 	if (!SERVER_J) return;
 
 	const title = `Bing 每日壁纸收集完成 (${list.length})`;
-	const content = list.map((item, index) => {
-		return `
+	const content = list
+		.map(
+			(item, index) => `
 # (${index + 1}) ${item.title}
 
 ## ${item.date}
@@ -117,18 +164,34 @@ async function sendNotification(list) {
 
 ${item.desc}
 
----
-`;
-	});
+`
+		)
+		.join('---');
 
-	const url = `https://sctapi.ftqq.com/${SERVER_J}.send`;
-	const body = new URLSearchParams();
+	let url = `https://sctapi.ftqq.com/${SERVER_J}.send`;
+	let body = new URLSearchParams();
 	body.set('title', title);
 	body.set('desp', content);
-	request(url, { method: 'POST', data: body })
-		.then(() => console.log('💌 notification sent 💌'))
-		.catch((err) => console.log(err));
-	// console.log('💌 notification sent 💌');
+	await request(url, { method: 'POST', data: body });
+	console.log('💌 ServerJ sent 💌');
+
+	url = `https://api.day.app/${BARK}`;
+	body = new URLSearchParams();
+	body.set('title', title);
+	body.set('body', content);
+	await request(url, { method: 'POST', data: body });
+	console.log('💌 Bark sent 💌');
 }
 
 getBingDailyList();
+
+/*
+function createThumbnail(imagePath, thumbPath) {
+	if (!fs.existsSync(TMB_FOLDER)) fs.mkdirSync(TMB_FOLDER);
+
+	if (!fs.existsSync(thumbPath)) {
+		exec(`convert -thumbnail ${TMB_WIDTH} ${imagePath} ${thumbPath}`);
+		console.log(`thumbnail created: ${thumbPath}`);
+	}
+}
+*/
