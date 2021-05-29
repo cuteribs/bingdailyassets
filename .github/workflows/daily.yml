@@ -23,5 +23,7 @@ jobs:
           SERVER_J: ${{ secrets.SERVER_J }}
           BARK: ${{ secrets.BARK }}
         run: |
+          curl https://raw.githubusercontent.com/cuteribs/bingdaily/main/bingdaily.js -O bingdaily.js
+          curl https://raw.githubusercontent.com/cuteribs/bingdaily/main/package.json -O package.json
           npm i
           node bingdaily.js
