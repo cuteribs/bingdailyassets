@@ -25,9 +25,16 @@ async function getBingDailyList() {
 	}
 
 	const newRecords = [];
-	const res = await request(API_URL);
+	let json;
 
-	for (const image of res.data.images) {
+	if (process.argv.length >= 3) {
+		json = require(process.argv[2]);
+	} else {
+		const res = await request(API_URL);
+		json = res.data;
+	}
+
+	for (const image of json.images) {
 		const info = {
 			date: `${image.startdate.slice(0, 4)}-${image.startdate.slice(4, 6)}-${image.startdate.slice(6, 8)}`,
 			fileName: `${image.urlbase.slice(7)}_UHD.jpg`,
@@ -36,7 +43,11 @@ async function getBingDailyList() {
 			copyright: image.copyright
 		};
 
-		await downloadImage(info);
+		try {
+			await downloadImage(info);
+		} catch (err) {
+			console.warn(err);
+		}
 
 		if (!records.find((r) => r.fileName == info.fileName)) {
 			records.push(info);
@@ -108,7 +119,9 @@ async function request(url, options) {
 		headers: options && options.headers,
 		data: (options && options.data) || null,
 		responseType: (options && options.responseType) || 'json',
-		validateStatus: false
+		validateStatus: false,
+		maxContentLength: Infinity,
+		maxBodyLength: Infinity
 	});
 	return res;
 }
@@ -157,13 +170,9 @@ async function sendNotification(list) {
 		.map(
 			(item, index) => `
 # (${index + 1}) ${item.title}
-
 ## ${item.date}
-
 [![${item.title}](https://www.bing.com/th?id=${item.fileName}&w=400&h=225)](https://www.bing.com/th?id=${item.fileName})
-
 ${item.desc}
-
 `
 		)
 		.join('---');
@@ -188,10 +197,54 @@ getBingDailyList();
 /*
 function createThumbnail(imagePath, thumbPath) {
 	if (!fs.existsSync(TMB_FOLDER)) fs.mkdirSync(TMB_FOLDER);
-
 	if (!fs.existsSync(thumbPath)) {
 		exec(`convert -thumbnail ${TMB_WIDTH} ${imagePath} ${thumbPath}`);
 		console.log(`thumbnail created: ${thumbPath}`);
 	}
 }
+
+console.save = function (data, filename) {
+	if (!data) {
+		console.error('Console.save: No data');
+		return;
+	}
+
+	if (!filename) filename = 'console.json';
+
+	if (typeof data === 'object') {
+		data = JSON.stringify(data, undefined, 4);
+	}
+
+	var blob = new Blob([data], { type: 'text/json' }),
+		e = document.createEvent('MouseEvents'),
+		a = document.createElement('a');
+
+	a.download = filename;
+	a.href = window.URL.createObjectURL(blob);
+	a.dataset.downloadurl = ['text/json', a.download, a.href].join(':');
+	e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+	a.dispatchEvent(e);
+};
+*/
+
+/*
+// grab image list from gifposter.com
+
+var list = Array.from(document.querySelectorAll('ul.arclist li a')).map((a) => {
+	let fileName = a.querySelector('img').src;
+	fileName = fileName.slice(fileName.indexOf('bingImages/') + 11, fileName.lastIndexOf('_1920'));
+	const startDate = a.querySelector('article h3 time').textContent.split('-').join('').trim();
+	const title = a.querySelector('article h3 span').textContent.trim();
+	const desc = a.querySelector('article p').textContent.trim();
+	return {
+		startdate: startDate,
+		urlbase: `/th?id=OHR.${fileName}`,
+		copyright: '',
+		title,
+		desc
+	};
+});
+
+console.save(list);
+
 */

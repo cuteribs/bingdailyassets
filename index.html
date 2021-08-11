@@ -98,6 +98,13 @@
 	<div class="head">
 		<h2>Bing Daily Wallpaper</h2>
 		<select id="yearMonths"></select>
+		<select id="cdns">
+			<option></option>
+			<option value="jsdelivr">jsdelivr CDN</option>
+			<option value="rawgit">rawgit CDN</option>
+			<!-- https://cdn.jsdelivr.net/gh/cuteribs/bingdaily/thumbnails/OHR.SeaGoldie_EN-US9625167980_UHD.jpg -->
+			<!-- https://ghcdn.rawgit.org/cuteribs/bingdaily/main/thumbnails/OHR.SeaGoldie_EN-US9625167980_UHD.jpg -->
+		</select>
 		<a href="https://github.com/cuteribs/bingdaily">
 			<svg class="repo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 				<title>GitHub</title>
@@ -114,25 +121,40 @@
 	</script>
 	<script>
 		const yearMonths = [];
-		const $select = $('#yearMonths').on('change', e => render($(e.target).val()));
+		const $yearMonths = $('#yearMonths').on('change', e => render());
+		const $cdns = $('#cdns').on('change', e => render());
 		const $container = $('#container').photobox('a', {
 			thumb: true,
 			loop: false,
 			captionTmpl: '<div class="title">{title}</div><a class="uhd-link" href="#">UHD</a><div class="counter">({currentImageIdx}/{totalImagesCount})</div>'
 		});
+
 		$(document.body).on('click', '.uhd-link', e => {
 			const fhdUrl = $('img.zoomable').attr('src');
 			window.open(fhdUrl.replace('_1920x1080.jpg', '_UHD.jpg'), '_blank');
 		});
+
 		let date = moment();
 
 		while (date.isAfter('2019-03-31')) {
 			const text = date.format('YYYY-MM');
-			$select.append(new Option(text, text));
+			$yearMonths.append(new Option(text, text));
 			date = date.subtract(1, 'months');
 		}
 
 		async function query(yearMonth) {
+			const cdn = $cdns.val();
+			let thumbnailBaseUrl = 'https://cuteribs.ga/bingdaily';
+
+			switch (cdn) {
+				case 'jsdelivr':
+					thumbnailBaseUrl = 'https://cdn.jsdelivr.net/gh/cuteribs/bingdaily';
+					break;
+				case 'rawgit':
+					thumbnailBaseUrl = 'https://ghcdn.rawgit.org/cuteribs/bingdaily/main';
+					break;
+			}
+
 			const config = {
 				headers: {
 					'Content-Type': 'application/json',
@@ -143,7 +165,7 @@
 			const json = await res.json();
 			json.sort((a, b) => a.date > b.date ? 1 : (a.date < b.date ? -1 : 0));
 			const list = json.filter(i => i.date.slice(0, 7) == yearMonth).map(o => ({
-				ThumbUrl: `https://cuteribs.ga/bingdaily/thumbnails/${o.fileName}`,
+				ThumbUrl: `${thumbnailBaseUrl}/thumbnails/${o.fileName}`,
 				FHDUrl: `https://www.bing.com/th?id=${o.fileName.replace('_UHD.jpg', '_1920x1080.jpg')}`,
 				UHDUrl: `https://www.bing.com/th?id=${o.fileName}`,
 				Title: o.title,
@@ -154,7 +176,8 @@
 			return list.reverse();
 		}
 
-		async function render(yearMonth) {
+		async function render() {
+			const yearMonth = $yearMonths.val();
 			const images = await query(yearMonth);
 			$container.html('');
 
@@ -172,7 +195,7 @@
 			});
 		}
 
-		render($select.val());
+		render($yearMonths.val());
 	</script>
 </body>
 
