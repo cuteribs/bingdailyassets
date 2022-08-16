@@ -11,7 +11,7 @@ const TOKEN = process.env.TOKEN;
 const REPO_NAME = process.env.REPO_NAME;
 const IMAGE_ON = process.env.IMAGE_ON || false;
 const TMB_ON = process.env.TMB_ON || false;
-const SERVER_J = process.env.SERVER_J;
+const WEIXIN = process.env.WEIXIN;
 const BARK = process.env.BARK;
 
 async function getBingDailyList() {
@@ -177,19 +177,23 @@ ${item.desc}
 		)
 		.join('---');
 
-	let url = `https://sctapi.ftqq.com/${SERVER_J}.send`;
-	let body = new URLSearchParams();
-	body.set('title', title);
-	body.set('desp', content);
-	await request(url, { method: 'POST', data: body });
-	console.log('💌 ServerJ sent 💌');
+	try {
+		let url = `https://sctapi.ftqq.com/${SERVER_J}.send`;
+		let body = new URLSearchParams();
+		body.set('title', title);
+		body.set('desp', content);
+		await request(url, { method: 'POST', data: body });
+		console.log('💌 ServerJ sent 💌');
+	} catch {}
 
-	url = `https://api.day.app/${BARK}`;
-	body = new URLSearchParams();
-	body.set('title', title);
-	body.set('body', content);
-	await request(url, { method: 'POST', data: body });
-	console.log('💌 Bark sent 💌');
+	try {
+		url = `https://api.day.app/${BARK}`;
+		body = new URLSearchParams();
+		body.set('title', title);
+		body.set('body', content);
+		await request(url, { method: 'POST', data: body });
+		console.log('💌 Bark sent 💌');
+	} catch {}
 }
 
 getBingDailyList();
