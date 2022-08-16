@@ -5,6 +5,7 @@ const { URLSearchParams } = require('url');
 const IMAGE_FOLDER = 'wallpapers';
 const TMB_FOLDER = 'thumbnails';
 const INDEX_FILE = 'index.json';
+const PENDING_FILE = 'pending.json';
 const API_URL = 'https://www.bing.com/HPImageArchive.aspx?pid=hp&format=js&n=8&setmkt=en-us&setlang=en-us&ensearch=1';
 
 const TOKEN = process.env.TOKEN;
@@ -40,7 +41,7 @@ async function getBingDailyList() {
 			fileName: `${image.urlbase.slice(7)}_UHD.jpg`,
 			title: image.title,
 			desc: image.desc,
-			copyright: image.copyright
+			copyright: image.copyright || ''
 		};
 
 		try {
@@ -176,7 +177,6 @@ ${item.desc}
 `
 		)
 		.join('---');
-
 	try {
 		let url = `https://sctapi.ftqq.com/${SERVER_J}.send`;
 		let body = new URLSearchParams();
