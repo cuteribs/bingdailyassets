@@ -76,7 +76,9 @@
 					'Accept': 'application/json',
 				}
 			};
-			const res = await fetch('index.json');
+			const res1 = await fetch('index.json');
+			const res2 = await fetch('index2.json');
+			const res = [...res1, ...res2];
 			const json = await res.json();
 			const list = json.filter(i => i.date.slice(0, 7) == yearMonth).map(o => ({
 				ThumbUrl: `/bingdaily/thumbnails/${o.fileName}`,

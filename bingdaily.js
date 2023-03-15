@@ -4,7 +4,7 @@ const { URLSearchParams } = require('url');
 
 const IMAGE_FOLDER = 'wallpapers';
 const TMB_FOLDER = 'thumbnails';
-const INDEX_FILE = 'index.json';
+const INDEX_FILE = 'index2.json';
 const PENDING_FILE = 'pending.json';
 const API_URL = 'https://www.bing.com/HPImageArchive.aspx?pid=hp&format=js&n=8&setmkt=en-us&setlang=en-us&ensearch=1';
 
