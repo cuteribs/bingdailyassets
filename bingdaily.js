@@ -13,6 +13,7 @@ const REPO_NAME = process.env.REPO_NAME;
 const IMAGE_ON = process.env.IMAGE_ON || false;
 const TMB_ON = process.env.TMB_ON || false;
 const WEIXIN = process.env.WEIXIN;
+const SERVER_J = process.env.SERVER_J;
 const BARK = process.env.BARK;
 
 async function getBingDailyList() {
