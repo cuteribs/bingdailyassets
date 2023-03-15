@@ -165,8 +165,6 @@ async function sendNotification(list) {
 	console.log('💌 notification send 💌');
 	if (!list || list.length == 0) return;
 
-	if (!SERVER_J) return;
-
 	const title = `Bing 每日壁纸收集完成 (${list.length})`;
 	const content = list
 		.map(
@@ -178,23 +176,29 @@ ${item.desc}
 `
 		)
 		.join('---');
-	try {
-		let url = `https://sctapi.ftqq.com/${SERVER_J}.send`;
-		let body = new URLSearchParams();
-		body.set('title', title);
-		body.set('desp', content);
-		await request(url, { method: 'POST', data: body });
-		console.log('💌 ServerJ sent 💌');
-	} catch {}
+		
 
-	try {
-		url = `https://api.day.app/${BARK}`;
-		body = new URLSearchParams();
-		body.set('title', title);
-		body.set('body', content);
-		await request(url, { method: 'POST', data: body });
-		console.log('💌 Bark sent 💌');
-	} catch {}
+	if (SERVER_J) {
+		try {
+			let url = `https://sctapi.ftqq.com/${SERVER_J}.send`;
+			let body = new URLSearchParams();
+			body.set('title', title);
+			body.set('desp', content);
+			await request(url, { method: 'POST', data: body });
+			console.log('💌 ServerJ sent 💌');
+		} catch {}
+	}
+
+	if (BARK) {
+		try {
+			url = `https://api.day.app/${BARK}`;
+			body = new URLSearchParams();
+			body.set('title', title);
+			body.set('body', content);
+			await request(url, { method: 'POST', data: body });
+			console.log('💌 Bark sent 💌');
+		} catch {}
+	}
 }
 
 getBingDailyList();
