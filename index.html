@@ -161,8 +161,11 @@
 					'Accept': 'application/json',
 				}
 			};
-			const res = await fetch('https://cuteribs.ga/bingdaily/index.json');
-			const json = await res.json();
+
+			const tasks = Promise.all(
+				['', '2'].map(n => fetch(`https://cuteribs.ga/bingdaily/index${n}.json`).then(resp => resp.json()))
+			);
+			const json = (await tasks).flat();
 			json.sort((a, b) => a.date > b.date ? 1 : (a.date < b.date ? -1 : 0));
 			const list = json.filter(i => i.date.slice(0, 7) == yearMonth).map(o => ({
 				ThumbUrl: `${thumbnailBaseUrl}/thumbnails/${o.fileName}`,
